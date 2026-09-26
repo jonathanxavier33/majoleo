@@ -2,7 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   updateCartUI();
 
-  document.getElementById('checkout-btn').addEventListener('click', proceedToCheckout);
+  const checkoutBtn = document.getElementById('checkout-btn');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', proceedToCheckout);
+  }
 });
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -28,11 +31,21 @@ async function loadProducts() {
         <h3>${product.title}</h3>
         <p>${product.description}</p>
         <p class="price"><strong>${product.price} €</strong></p>
-        <button onclick='addToCart(${JSON.stringify(product)})'>Ajouter au panier</button>
+        <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&#39;")}'>Ajouter au panier</button>
+        <br><br>
         <a href="${product.gumroadUrl}" target="_blank" class="gumroad-direct">Acheter direct sur Gumroad</a>
       `;
       container.appendChild(card);
     });
+
+    // Attacher les écouteurs d'événements pour l'ajout au panier en sécurité
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const productData = JSON.parse(e.target.getAttribute('data-product'));
+        addToCart(productData);
+      });
+    });
+
   } catch (error) {
     console.error('Erreur chargement produits:', error);
   }
@@ -76,9 +89,10 @@ function updateCartUI() {
   cart.forEach(item => {
     total += item.price * item.quantity;
     const li = document.createElement('li');
+    li.style.margin = "10px 0";
     li.innerHTML = `
       <span>${item.title} (x${item.quantity}) - ${(item.price * item.quantity).toFixed(2)} €</span>
-      <button onclick="removeFromCart('${item.id}')">Supprimer</button>
+      <button onclick="removeFromCart('${item.id}')" style="margin-left: 10px; background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">Supprimer</button>
     `;
     cartItemsContainer.appendChild(li);
   });
@@ -93,8 +107,7 @@ function proceedToCheckout() {
     alert('Votre panier est vide !');
     return;
   }
-  // Redirection vers le premier lien Gumroad du panier ou page de paiement globale
-  // Note: Gumroad gère un produit par lien, l'idéal est de rediriger vers le lien du produit principal ou configurer un bundle.
+  // Redirection vers le lien Gumroad du premier article du panier
   const primaryProduct = cart[0];
   if (primaryProduct && primaryProduct.gumroadUrl && primaryProduct.gumroadUrl !== '#') {
     window.location.href = primaryProduct.gumroadUrl;
