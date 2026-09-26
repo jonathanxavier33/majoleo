@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Merci pour votre achat — La Salle des Ressources</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand"><span class="brand-mark" id="brand-mark">••</span> <span id="brand-name">Boutique de ressources pédagogiques</span></a>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="panel" id="panel">
+      <h2>Merci pour votre achat 🎉</h2>
+      <p class="sub" id="sub">Nous préparons votre code d'accès…</p>
+      <div id="body"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  fetch("/api/site-config").then((r) => r.json()).then((site) => {
+    document.title = "Merci — " + site.name;
+    document.getElementById("brand-name").textContent = site.name;
+    document.getElementById("brand-mark").textContent = (site.name || "?").trim().slice(0, 2).toUpperCase();
+  }).catch(() => {});
+
+  const params = new URLSearchParams(location.search);
+  const sessionId = params.get("session_id");
+  const panelBody = document.getElementById("body");
+  const sub = document.getElementById("sub");
+
+  if (!sessionId) {
+    sub.textContent = "Aucun paiement à afficher.";
+    panelBody.innerHTML = `<a class="btn btn-primary" href="/">Retour au catalogue</a>`;
+    return;
+  }
+
+  let attempts = 0;
+  async function poll() {
+    attempts++;
+    try {
+      const res = await fetch("/api/session/" + encodeURIComponent(sessionId));
+      if (res.ok) {
+        const data = await res.json();
+        sub.textContent = "Voici votre code d'accès personnel — conservez-le précieusement.";
+        panelBody.innerHTML = `
+          <p style="margin-bottom:10px;"><strong>${escapeHtml(data.productTitle)}</strong></p>
+          <div class="code-display">${escapeHtml(data.code)}</div>
+          <button class="btn btn-dark btn-block" style="margin-top:16px;" id="copy-btn">Copier le code</button>
+          <a class="btn btn-primary btn-block" style="margin-top:10px;" href="/download/${encodeURIComponent(data.code)}">Télécharger maintenant</a>
+          <p class="form-note" style="margin-top:14px;">Retrouvez ce fichier à tout moment depuis la page d'accueil, section « J'ai un code ».</p>`;
+        document.getElementById("copy-btn").addEventListener("click", () => {
+          navigator.clipboard.writeText(data.code).then(() => {
+            document.getElementById("copy-btn").textContent = "Code copié ✓";
+          });
+        });
+        return;
+      }
+    } catch (e) { /* on retente */ }
+
+    if (attempts < 12) {
+      setTimeout(poll, 1500);
+    } else {
+      sub.textContent = "Le paiement est en cours de confirmation.";
+      panelBody.innerHTML = `<p>Cela prend parfois quelques minutes. Vous pouvez fermer cette page : votre code sera disponible via « J'ai un code » sur l'accueil dès que le paiement sera confirmé. Si rien n'apparaît d'ici 10 minutes, contactez le support.</p>
+        <a class="btn btn-ghost" style="margin-top:14px;" href="/">Retour au catalogue</a>`;
+    }
+  }
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  poll();
+})();
+</script>
+</body>
+</html>
