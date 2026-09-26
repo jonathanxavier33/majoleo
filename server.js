@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Configuration de Multer pour corriger le bug de téléchargement des fichiers
+// Configuration de Multer pour les fichiers pédagogiques
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, 'public', 'uploads');
@@ -26,54 +26,236 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
-
 const upload = multer({ storage: storage });
 
 // Fichiers de données JSON
-const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
+const DATA_DIR = path.join(__dirname, 'data');
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const PURCHASES_FILE = path.join(DATA_DIR, 'purchases.json');
 
-// Route pour récupérer les produits
-app.get('/api/products', (req, res) => {
-  if (!fs.existsSync(PRODUCTS_FILE)) {
-    return res.json([]);
+// S'assurer que le dossier data existe
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Fonctions utilitaires
+function readJson(file, defaultVal) {
+  if (!fs.existsSync(file)) return defaultVal;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    return defaultVal;
   }
-  const data = fs.readFileSync(PRODUCTS_FILE, 'utf8');
-  res.json(JSON.parse(data));
+}
+
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+// ------------------------------------------------------------------
+// ROUTES PUBLIQUES
+// ------------------------------------------------------------------
+
+// Route pour récupérer les produits (côté boutique)
+app.get('/api/products', (req, res) => {
+  const products = readJson(PRODUCTS_FILE, []);
+  // Ne renvoyer que les produits actifs pour la boutique publique
+  const activeProducts = products.filter(p => p.active !== false);
+  res.json(activeProducts);
 });
 
-// Route admin pour ajouter un produit avec un fichier pédagogique
-app.post('/api/products', upload.single('file'), (req, res) => {
+// Configuration publique du site
+app.get('/api/site-config', (req, res) => {
+  const config = readJson(CONFIG_FILE, {});
+  res.json({
+    name: config.name || "Boutique Pédagogique",
+    tagline: config.tagline || "Ressources et contenus pour vos cours",
+    contactEmail: config.contactEmail || ""
+  });
+});
+
+// ------------------------------------------------------------------
+// ROUTES ADMIN & SESSION
+// ------------------------------------------------------------------
+
+// Gestion basique de session en mémoire
+let adminSession = false;
+
+app.get('/admin/session', (req, res) => {
+  const config = readJson(CONFIG_FILE, {});
+  const configured = !!config.password;
+  res.json({
+    configured: configured,
+    authenticated: adminSession
+  });
+});
+
+// Premier lancement : configuration du mot de passe créateur
+app.post('/admin/setup', (req, res) => {
   try {
-    const { title, description, price, gumroadUrl } = req.body;
+    const { password } = req.body;
+    if (!password || password.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères." });
+    }
+    const config = readJson(CONFIG_FILE, {});
+    config.password = password;
+    writeJson(CONFIG_FILE, config);
+    adminSession = true;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la configuration." });
+  }
+});
+
+// Connexion admin
+app.post('/admin/login', (req, res) => {
+  const { password } = req.body;
+  const config = readJson(CONFIG_FILE, {});
+  if (config.password && password === config.password) {
+    adminSession = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: "Mot de passe incorrect." });
+  }
+});
+
+// Déconnexion
+app.post('/admin/logout', (req, res) => {
+  adminSession = false;
+  res.json({ success: true });
+});
+
+// ------------------------------------------------------------------
+// GESTION DES PRODUITS (ESPACE CRÉATEUR)
+// ------------------------------------------------------------------
+
+// Lister tous les produits (actifs et masqués) pour l'admin
+app.get('/admin/products', (req, res) => {
+  const products = readJson(PRODUCTS_FILE, []);
+  res.json(products);
+});
+
+// Ajouter un produit
+app.post('/admin/products', upload.single('file'), (req, res) => {
+  try {
+    const { title, description, price, gumroadUrl, category } = req.body;
     const filePath = req.file ? `/uploads/${req.file.filename}` : '';
 
     const newProduct = {
       id: Date.now().toString(),
-      title,
-      description,
-      price: parseFloat(price) || 0,
+      title: title || "Sans titre",
+      description: description || "",
+      price: Math.round(parseFloat(price) * 100) || 0, // Stocké en centimes
       gumroadUrl: gumroadUrl || '#',
-      fileUrl: filePath
+      fileUrl: filePath,
+      category: category || "Général",
+      active: true,
+      createdAt: new Date().toISOString()
     };
 
-    let products = [];
-    if (fs.existsSync(PRODUCTS_FILE)) {
-      products = JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
-    }
+    const products = readJson(PRODUCTS_FILE, []);
     products.push(newProduct);
-    
-    // S'assurer que le dossier data existe
-    const dataDir = path.dirname(PRODUCTS_FILE);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    writeJson(PRODUCTS_FILE, products);
+
+    res.status(201).json(newProduct);
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de l'enregistrement du produit." });
+  }
+});
+
+// Modifier ou masquer un produit
+app.put('/admin/products/:id', (req, res) => {
+  try {
+    const { id } = req.id || req.params;
+    const productId = req.params.id;
+    const products = readJson(PRODUCTS_FILE, []);
+    const index = products.findIndex(p => p.id === productId);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Produit introuvable." });
     }
 
-    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
+    const prod = products[index];
+    if (req.body.title !== undefined) prod.title = req.body.title;
+    if (req.body.description !== undefined) prod.description = req.body.description;
+    if (req.body.price !== undefined) prod.price = Math.round(parseFloat(req.body.price) * 100);
+    if (req.body.active !== undefined) prod.active = req.body.active;
+    if (req.body.category !== undefined) prod.category = req.body.category;
 
-    res.status(201).json({ success: true, product: newProduct });
+    writeJson(PRODUCTS_FILE, products);
+    res.json(prod);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erreur lors de l'enregistrement du produit." });
+    res.status(500).json({ error: "Erreur lors de la mise à jour." });
+  }
+});
+
+// Supprimer un produit
+app.delete('/admin/products/:id', (req, res) => {
+  try {
+    const productId = req.params.id;
+    let products = readJson(PRODUCTS_FILE, []);
+    products = products.filter(p => p.id !== productId);
+    writeJson(PRODUCTS_FILE, products);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la suppression." });
+  }
+});
+
+// ------------------------------------------------------------------
+// STATS, VENTES ET PARAMÈTRES
+// ------------------------------------------------------------------
+
+app.get('/admin/stats', (req, res) => {
+  const products = readJson(PRODUCTS_FILE, []);
+  const purchases = readJson(PURCHASES_FILE, []);
+  
+  const totalRevenue = purchases.reduce((acc, s) => acc + (s.amount || 0), 0);
+  
+  res.json({
+    totalProducts: products.length,
+    totalSales: purchases.length,
+    revenueFormatted: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(totalRevenue / 100)
+  });
+});
+
+app.get('/admin/purchases', (req, res) => {
+  const purchases = readJson(PURCHASES_FILE, []);
+  res.json(purchases);
+});
+
+app.put('/admin/site-config', (req, res) => {
+  try {
+    const { name, tagline, contactEmail } = req.body;
+    const config = readJson(CONFIG_FILE, {});
+    if (name !== undefined) config.name = name;
+    if (tagline !== undefined) config.tagline = tagline;
+    if (contactEmail !== undefined) config.contactEmail = contactEmail;
+    writeJson(CONFIG_FILE, config);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la mise à jour des paramètres." });
+  }
+});
+
+app.post('/admin/change-password', (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const config = readJson(CONFIG_FILE, {});
+    
+    if (config.password && currentPassword !== config.password) {
+      return res.status(400).json({ error: "Ancien mot de passe incorrect." });
+    }
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: "Le nouveau mot de passe doit faire au moins 8 caractères." });
+    }
+
+    config.password = newPassword;
+    writeJson(CONFIG_FILE, config);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors du changement de mot de passe." });
   }
 });
 
