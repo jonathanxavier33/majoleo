@@ -57,15 +57,12 @@ function writeJson(file, data) {
 // ROUTES PUBLIQUES
 // ------------------------------------------------------------------
 
-// Route pour récupérer les produits (côté boutique)
 app.get('/api/products', (req, res) => {
   const products = readJson(PRODUCTS_FILE, []);
-  // Ne renvoyer que les produits actifs pour la boutique publique
   const activeProducts = products.filter(p => p.active !== false);
   res.json(activeProducts);
 });
 
-// Configuration publique du site
 app.get('/api/site-config', (req, res) => {
   const config = readJson(CONFIG_FILE, {});
   res.json({
@@ -79,7 +76,6 @@ app.get('/api/site-config', (req, res) => {
 // ROUTES ADMIN & SESSION
 // ------------------------------------------------------------------
 
-// Gestion basique de session en mémoire
 let adminSession = false;
 
 app.get('/admin/session', (req, res) => {
@@ -91,7 +87,6 @@ app.get('/admin/session', (req, res) => {
   });
 });
 
-// Premier lancement : configuration du mot de passe créateur
 app.post('/admin/setup', (req, res) => {
   try {
     const { password } = req.body;
@@ -108,7 +103,6 @@ app.post('/admin/setup', (req, res) => {
   }
 });
 
-// Connexion admin
 app.post('/admin/login', (req, res) => {
   const { password } = req.body;
   const config = readJson(CONFIG_FILE, {});
@@ -120,7 +114,6 @@ app.post('/admin/login', (req, res) => {
   }
 });
 
-// Déconnexion
 app.post('/admin/logout', (req, res) => {
   adminSession = false;
   res.json({ success: true });
@@ -130,23 +123,27 @@ app.post('/admin/logout', (req, res) => {
 // GESTION DES PRODUITS (ESPACE CRÉATEUR)
 // ------------------------------------------------------------------
 
-// Lister tous les produits (actifs et masqués) pour l'admin
 app.get('/admin/products', (req, res) => {
   const products = readJson(PRODUCTS_FILE, []);
   res.json(products);
 });
 
-// Ajouter un produit
-app.post('/admin/products', upload.single('file'), (req, res) => {
+// Ajout d'un produit (gère tous les fichiers envoyés par le formulaire sans erreur)
+app.post('/admin/products', upload.any(), (req, res) => {
   try {
     const { title, description, price, gumroadUrl, category } = req.body;
-    const filePath = req.file ? `/uploads/${req.file.filename}` : '';
+    
+    let filePath = '';
+    if (req.files && req.files.length > 0) {
+      const mainFile = req.files.find(f => f.fieldname === 'file') || req.files[0];
+      filePath = `/uploads/${mainFile.filename}`;
+    }
 
     const newProduct = {
       id: Date.now().toString(),
       title: title || "Sans titre",
       description: description || "",
-      price: Math.round(parseFloat(price) * 100) || 0, // Stocké en centimes
+      price: Math.round(parseFloat(price) * 100) || 0,
       gumroadUrl: gumroadUrl || '#',
       fileUrl: filePath,
       category: category || "Général",
@@ -160,14 +157,13 @@ app.post('/admin/products', upload.single('file'), (req, res) => {
 
     res.status(201).json(newProduct);
   } catch (error) {
+    console.error("Erreur serveur:", error);
     res.status(500).json({ error: "Erreur lors de l'enregistrement du produit." });
   }
 });
 
-// Modifier ou masquer un produit
 app.put('/admin/products/:id', (req, res) => {
   try {
-    const { id } = req.id || req.params;
     const productId = req.params.id;
     const products = readJson(PRODUCTS_FILE, []);
     const index = products.findIndex(p => p.id === productId);
@@ -190,7 +186,6 @@ app.put('/admin/products/:id', (req, res) => {
   }
 });
 
-// Supprimer un produit
 app.delete('/admin/products/:id', (req, res) => {
   try {
     const productId = req.params.id;
