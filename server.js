@@ -6,254 +6,173 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ==========================================
+// CONFIGURATION & MIDDLEWARES
+// ==========================================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use(express.static('public')); // Pour servir le front-end et les uploads
 
-// Configuration de Multer pour les fichiers pédagogiques
+// Configuration de Multer pour l'upload des fichiers pédagogiques et images
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    destination: (req, file, cb) => {
+        const uploadDir = 'public/uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
 });
 const upload = multer({ storage: storage });
 
-// Fichiers de données JSON
-const DATA_DIR = path.join(__dirname, 'data');
-const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const PURCHASES_FILE = path.join(DATA_DIR, 'purchases.json');
+// ==========================================
+// GESTION DE LA SESSION ADMIN (Sécurisée)
+// ==========================================
+// Utilisation d'un objet d'état ou d'un token simple en mémoire (à coupler avec des cookies/JWT en prod)
+let adminState = {
+    isAuthenticated: false,
+    lastLogin: null
+};
 
-// S'assurer que le dossier data existe
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Fonctions utilitaires
-function readJson(file, defaultVal) {
-  if (!fs.existsSync(file)) return defaultVal;
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (e) {
-    return defaultVal;
-  }
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-// ------------------------------------------------------------------
-// ROUTES PUBLIQUES
-// ------------------------------------------------------------------
-
-app.get('/api/products', (req, res) => {
-  const products = readJson(PRODUCTS_FILE, []);
-  const activeProducts = products.filter(p => p.active !== false);
-  res.json(activeProducts);
-});
-
-app.get('/api/site-config', (req, res) => {
-  const config = readJson(CONFIG_FILE, {});
-  res.json({
-    name: config.name || "Boutique Pédagogique",
-    tagline: config.tagline || "Ressources et contenus pour vos cours",
-    contactEmail: config.contactEmail || ""
-  });
-});
-
-// ------------------------------------------------------------------
-// ROUTES ADMIN & SESSION
-// ------------------------------------------------------------------
-
-let adminSession = false;
-
-app.get('/admin/session', (req, res) => {
-  const config = readJson(CONFIG_FILE, {});
-  const configured = !!config.password;
-  res.json({
-    configured: configured,
-    authenticated: adminSession
-  });
-});
-
-app.post('/admin/setup', (req, res) => {
-  try {
-    const { password } = req.body;
-    if (!password || password.length < 8) {
-      return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères." });
+// Middleware pour protéger les routes administrateur
+const requireAdmin = (req, res, next) => {
+    if (!adminState.isAuthenticated) {
+        return res.status(401).json({ error: "Accès refusé. Veuillez vous connecter en tant qu'administrateur." });
     }
-    const config = readJson(CONFIG_FILE, {});
-    config.password = password;
-    writeJson(CONFIG_FILE, config);
-    adminSession = true;
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la configuration." });
-  }
+    next();
+};
+
+// ==========================================
+// BASE DE DONNÉES TEMPORAIRE (Simulation)
+// ==========================================
+let products = [
+    { id: 1, title: "Escape Game Cuisine - Niveau 1", price: 9.99, file: "escape_cuisine.zip" },
+    { id: 2, title: "Fiche Vocabulaire Boucher-Charcutier", price: 4.99, file: "boucherie_vocab.pdf" }
+];
+
+// ==========================================
+// ROUTES PUBLIQUES
+// ==========================================
+
+// Récupérer tous les produits
+app.get('/api/products', (req, res) => {
+    res.json(products);
 });
 
+// Récupérer un produit par son ID
+app.get('/api/products/:id', (req, res) => {
+    const product = products.find(p => p.id === parseInt(req.params.id));
+    if (!product) return res.status(404).json({ error: "Produit introuvable." });
+    res.json(product);
+});
+
+// ==========================================
+// ROUTES D'AUTHENTIFICATION ADMIN
+// ==========================================
+
+// Connexion Admin
 app.post('/admin/login', (req, res) => {
-  const { password } = req.body;
-  const config = readJson(CONFIG_FILE, {});
-  if (config.password && password === config.password) {
-    adminSession = true;
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ error: "Mot de passe incorrect." });
-  }
-});
-
-app.post('/admin/logout', (req, res) => {
-  adminSession = false;
-  res.json({ success: true });
-});
-
-// ------------------------------------------------------------------
-// GESTION DES PRODUITS (ESPACE CRÉATEUR)
-// ------------------------------------------------------------------
-
-app.get('/admin/products', (req, res) => {
-  const products = readJson(PRODUCTS_FILE, []);
-  res.json(products);
-});
-
-// Ajout d'un produit (prix enregistré directement en euros)
-app.post('/admin/products', upload.any(), (req, res) => {
-  try {
-    const { title, description, price, gumroadUrl, category } = req.body;
+    const { username, password } = req.body;
     
-    let filePath = '';
-    if (req.files && req.files.length > 0) {
-      const mainFile = req.files.find(f => f.fieldname === 'file') || req.files[0];
-      filePath = `/uploads/${mainFile.filename}`;
+    // Remplace ces valeurs par tes propres identifiants sécurisés (ou variables d'environnement)
+    const ADMIN_USER = process.env.ADMIN_USER || "admin";
+    const ADMIN_PASS = process.env.ADMIN_PASS || "lingoskill2026";
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        adminState.isAuthenticated = true;
+        adminState.lastLogin = new Date();
+        return res.json({ success: true, message: "Connexion administrateur réussie." });
+    }
+    
+    res.status(401).json({ success: false, error: "Identifiants incorrects." });
+});
+
+// Déconnexion Admin
+app.post('/admin/logout', requireAdmin, (req, res) => {
+    adminState.isAuthenticated = false;
+    adminState.lastLogin = null;
+    res.json({ success: true, message: "Déconnexion réussie." });
+});
+
+// Vérifier l'état de la session admin
+app.get('/admin/session', (req, res) => {
+    res.json({ isAuthenticated: adminState.isAuthenticated });
+});
+
+// ==========================================
+// ROUTES ADMINISTRATEUR (PROTÉGÉES)
+// ==========================================
+
+// Créer un produit (avec upload de fichier optionnel)
+app.post('/admin/products', requireAdmin, upload.single('resourceFile'), (req, res) => {
+    const { title, price } = req.body;
+    
+    if (!title || !price) {
+        return res.status(400).json({ error: "Le titre et le prix sont obligatoires." });
     }
 
     const newProduct = {
-      id: Date.now().toString(),
-      title: title || "Sans titre",
-      description: description || "",
-      price: parseFloat(price) || 0, // Stocké directement en euros
-      gumroadUrl: gumroadUrl || '#',
-      fileUrl: filePath,
-      category: category || "Général",
-      active: true,
-      createdAt: new Date().toISOString()
+        id: products.length > 0 ? products[products.length - 1].id + 1 : 1,
+        title,
+        price: parseFloat(price),
+        file: req.file ? req.file.filename : null
     };
 
-    const products = readJson(PRODUCTS_FILE, []);
     products.push(newProduct);
-    writeJson(PRODUCTS_FILE, products);
-
-    res.status(201).json(newProduct);
-  } catch (error) {
-    console.error("Erreur serveur:", error);
-    res.status(500).json({ error: "Erreur lors de l'enregistrement du produit." });
-  }
+    res.status(201).json({ message: "Produit créé avec succès", product: newProduct });
 });
 
-app.put('/admin/products/:id', (req, res) => {
-  try {
-    const productId = req.params.id;
-    const products = readJson(PRODUCTS_FILE, []);
-    const index = products.findIndex(p => p.id === productId);
+// Modifier un produit existant
+app.put('/admin/products/:id', requireAdmin, upload.single('resourceFile'), (req, res) => {
+    const productId = parseInt(req.params.id);
+    const product = products.find(p => p.id === productId);
 
-    if (index === -1) {
-      return res.status(404).json({ error: "Produit introuvable." });
+    if (!product) {
+        return res.status(404).json({ error: "Produit introuvable." });
     }
 
-    const prod = products[index];
-    if (req.body.title !== undefined) prod.title = req.body.title;
-    if (req.body.description !== undefined) prod.description = req.body.description;
-    if (req.body.price !== undefined) prod.price = parseFloat(req.body.price) || 0; // En euros directement
-    if (req.body.active !== undefined) prod.active = req.body.active;
-    if (req.body.category !== undefined) prod.category = req.body.category;
-
-    writeJson(PRODUCTS_FILE, products);
-    res.json(prod);
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la mise à jour." });
-  }
-});
-
-app.delete('/admin/products/:id', (req, res) => {
-  try {
-    const productId = req.params.id;
-    let products = readJson(PRODUCTS_FILE, []);
-    products = products.filter(p => p.id !== productId);
-    writeJson(PRODUCTS_FILE, products);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la suppression." });
-  }
-});
-
-// ------------------------------------------------------------------
-// STATS, VENTES ET PARAMÈTRES
-// ------------------------------------------------------------------
-
-app.get('/admin/stats', (req, res) => {
-  const products = readJson(PRODUCTS_FILE, []);
-  const purchases = readJson(PURCHASES_FILE, []);
-  
-  const totalRevenue = purchases.reduce((acc, s) => acc + (s.amount || 0), 0);
-  
-  res.json({
-    totalProducts: products.length,
-    totalSales: purchases.length,
-    revenueFormatted: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(totalRevenue)
-  });
-});
-
-app.get('/admin/purchases', (req, res) => {
-  const purchases = readJson(PURCHASES_FILE, []);
-  res.json(purchases);
-});
-
-app.put('/admin/site-config', (req, res) => {
-  try {
-    const { name, tagline, contactEmail } = req.body;
-    const config = readJson(CONFIG_FILE, {});
-    if (name !== undefined) config.name = name;
-    if (tagline !== undefined) config.tagline = tagline;
-    if (contactEmail !== undefined) config.contactEmail = contactEmail;
-    writeJson(CONFIG_FILE, config);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la mise à jour des paramètres." });
-  }
-});
-
-app.post('/admin/change-password', (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const config = readJson(CONFIG_FILE, {});
+    const { title, price } = req.body;
+    if (title) product.title = title;
+    if (price) product.price = parseFloat(price);
     
-    if (config.password && currentPassword !== config.password) {
-      return res.status(400).json({ error: "Ancien mot de passe incorrect." });
-    }
-    if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({ error: "Le nouveau mot de passe doit faire au moins 8 caractères." });
+    // Si un nouveau fichier est uploadé, on met à jour le nom du fichier
+    if (req.file) {
+        // Optionnel : supprimer l'ancien fichier du disque pour faire du ménage
+        if (product.file && fs.existsSync(path.join('public/uploads', product.file))) {
+            fs.unlinkSync(path.join('public/uploads', product.file));
+        }
+        product.file = req.file.filename;
     }
 
-    config.password = newPassword;
-    writeJson(CONFIG_FILE, config);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors du changement de mot de passe." });
-  }
+    res.json({ message: "Produit mis à jour avec succès", product });
 });
 
+// Supprimer un produit
+app.delete('/admin/products/:id', requireAdmin, (req, res) => {
+    const productId = parseInt(req.params.id);
+    const productIndex = products.findIndex(p => p.id === productId);
+
+    if (productIndex === -1) {
+        return res.status(404).json({ error: "Produit introuvable." });
+    }
+
+    // Supprimer le fichier associé du serveur si besoin
+    const product = products[productIndex];
+    if (product.file && fs.existsSync(path.join('public/uploads', product.file))) {
+        fs.unlinkSync(path.join('public/uploads', product.file));
+    }
+
+    products.splice(productIndex, 1);
+    res.json({ message: "Produit supprimé avec succès." });
+});
+
+// ==========================================
+// LANCEMENT DU SERVEUR
+// ==========================================
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+    console.log(`Serveur démarré sur le port ${PORT}`);
 });
