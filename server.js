@@ -128,7 +128,7 @@ app.get('/admin/products', (req, res) => {
   res.json(products);
 });
 
-// Ajout d'un produit (gère tous les fichiers envoyés par le formulaire sans erreur)
+// Ajout d'un produit (prix enregistré directement en euros)
 app.post('/admin/products', upload.any(), (req, res) => {
   try {
     const { title, description, price, gumroadUrl, category } = req.body;
@@ -143,7 +143,7 @@ app.post('/admin/products', upload.any(), (req, res) => {
       id: Date.now().toString(),
       title: title || "Sans titre",
       description: description || "",
-      price: Math.round(parseFloat(price) * 100) || 0,
+      price: parseFloat(price) || 0, // Stocké directement en euros
       gumroadUrl: gumroadUrl || '#',
       fileUrl: filePath,
       category: category || "Général",
@@ -175,7 +175,7 @@ app.put('/admin/products/:id', (req, res) => {
     const prod = products[index];
     if (req.body.title !== undefined) prod.title = req.body.title;
     if (req.body.description !== undefined) prod.description = req.body.description;
-    if (req.body.price !== undefined) prod.price = Math.round(parseFloat(req.body.price) * 100);
+    if (req.body.price !== undefined) prod.price = parseFloat(req.body.price) || 0; // En euros directement
     if (req.body.active !== undefined) prod.active = req.body.active;
     if (req.body.category !== undefined) prod.category = req.body.category;
 
@@ -211,7 +211,7 @@ app.get('/admin/stats', (req, res) => {
   res.json({
     totalProducts: products.length,
     totalSales: purchases.length,
-    revenueFormatted: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(totalRevenue / 100)
+    revenueFormatted: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(totalRevenue)
   });
 });
 
