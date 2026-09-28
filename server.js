@@ -279,7 +279,10 @@ app.delete('/admin/products/:id', requireAdmin, (req, res) => {
         });
     });
 });
-
+// Route pour afficher la page d'administration
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 // ==========================================
 // 6. LANCEMENT DU SERVEUR
 // ==========================================
