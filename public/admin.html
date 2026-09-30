@@ -4,25 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - Majoléo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-color: #f8fafc;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #e0e7ff;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-muted: #64748b;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
             --danger: #ef4444;
-            --success: #22c55e;
+            --danger-bg: #fee2e2;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         body {
@@ -32,28 +37,32 @@
             min-height: 100vh;
         }
 
-        /* Sidebar */
+        /* Sidebar moderne et épurée */
         aside {
-            width: 260px;
+            width: 280px;
             background: var(--card-bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             position: fixed;
             height: 100vh;
+            z-index: 10;
         }
 
         .sidebar-brand {
-            padding: 24px;
-            font-size: 1.25rem;
+            padding: 28px 24px;
+            font-size: 1.4rem;
             font-weight: 700;
             color: var(--primary);
-            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
         .sidebar-menu {
             list-style: none;
-            padding: 24px 16px;
+            padding: 20px 16px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -65,75 +74,105 @@
             text-align: left;
             background: transparent;
             border: none;
-            padding: 12px 16px;
+            padding: 14px 16px;
             font-size: 0.95rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-muted);
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .sidebar-menu button:hover, .sidebar-menu button.active {
-            background: #eef2ff;
+        .sidebar-menu button:hover {
+            background: var(--primary-light);
             color: var(--primary);
         }
 
+        .sidebar-menu button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
         .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid var(--border);
+            padding: 20px 16px;
+            border-top: 1px solid #f1f5f9;
         }
 
         .btn-logout {
             width: 100%;
-            background: #f1f5f9;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 10px;
             color: var(--danger);
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-logout:hover {
-            background: #fee2e2;
+            background: var(--danger-bg);
+            border-color: #fca5a5;
         }
 
-        /* Main Content */
+        /* Contenu Principal */
         main {
-            margin-left: 260px;
+            margin-left: 280px;
             flex-grow: 1;
             padding: 40px;
-            max-width: 1000px;
+            max-width: 1100px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            margin-bottom: 24px;
             color: var(--text-main);
         }
 
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
             margin-bottom: 24px;
         }
 
-        /* Forms */
+        /* Formulaires ergonomiques */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
         }
 
         label {
             display: block;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: var(--text-main);
         }
 
@@ -142,47 +181,128 @@
         input[type="password"],
         textarea {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 16px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
+            background: #fafafa;
         }
 
         input:focus, textarea:focus {
+            background: white;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         textarea {
             resize: vertical;
-            height: 100px;
+            height: 120px;
+        }
+
+        .file-upload-box {
+            border: 2px dashed var(--border);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .file-upload-box:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
         }
 
         .btn-primary {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 14px 28px;
+            border-radius: 10px;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-primary:hover {
             background: var(--primary-hover);
         }
 
-        .file-input-wrapper {
-            margin-top: 6px;
+        .btn-primary:active {
+            transform: scale(0.98);
         }
 
-        .help-text {
-            font-size: 0.8rem;
+        /* Liste des produits sous forme de cartes élégantes */
+        .products-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .product-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: border-color 0.2s;
+        }
+
+        .product-card:hover {
+            border-color: var(--primary);
+        }
+
+        .product-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .product-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            margin-top: 4px;
+        }
+
+        .badge-category {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .badge-price {
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .btn-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #fecaca;
         }
 
         .tab-content {
@@ -191,16 +311,23 @@
 
         .tab-content.active {
             display: block;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        /* Modal / Overlay Auth */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Overlay d'authentification */
         #auth-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -209,123 +336,159 @@
 
         .auth-card {
             background: white;
-            padding: 32px;
+            padding: 40px;
             border-radius: 16px;
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
         .auth-card h2 {
             margin-bottom: 8px;
-            font-size: 1.25rem;
+            font-size: 1.5rem;
+            color: var(--text-main);
         }
 
         .auth-card p {
             color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 20px;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
         }
 
         .error-msg {
+            background: var(--danger-bg);
             color: var(--danger);
+            padding: 10px 14px;
+            border-radius: 8px;
             font-size: 0.85rem;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
 
-    <!-- Modal d'authentification / Setup -->
+    <!-- Modal Connexion / Setup -->
     <div id="auth-overlay">
         <div class="auth-card">
-            <h2 id="auth-title">Connexion Administration</h2>
-            <p id="auth-desc">Veuillez entrer votre mot de passe administrateur.</p>
-            <div id="auth-error" class="error-msg"></div>
+            <h2 id="auth-title">Espace Sécurisé</h2>
+            <p id="auth-desc">Veuillez entrer votre mot de passe administrateur pour continuer.</p>
+            <div id="auth-error" class="error-msg" style="display:none;"></div>
             <form id="auth-form">
                 <div class="form-group">
                     <label>Mot de passe</label>
                     <input type="password" id="auth-password" required placeholder="••••••••">
-                    <div id="setup-help" class="help-text" style="display:none;">Minimum 8 caractères (première configuration).</div>
+                    <div id="setup-help" style="display:none; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">Première configuration : choisissez un mot de passe solide (min. 8 caractères).</div>
                 </div>
-                <button type="submit" class="btn-primary" style="width:100%;">Valider</button>
+                <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Se connecter</button>
             </form>
         </div>
     </div>
 
-    <!-- Sidebar de navigation -->
+    <!-- Sidebar -->
     <aside>
-        <div class="sidebar-brand">Majoléo Admin</div>
+        <div class="sidebar-brand">
+            🚀 Majoléo Admin
+        </div>
         <ul class="sidebar-menu">
-            <li><button class="active" onclick="switchTab('products', this)">📦 Gérer les ressources</button></li>
+            <li><button class="active" onclick="switchTab('products', this)">📦 Mes Ressources</button></li>
             <li><button onclick="switchTab('add-product', this)">➕ Ajouter une ressource</button></li>
-            <li><button onclick="switchTab('sales', this)">💳 Ventes & Achats</button></li>
+            <li><button onclick="switchTab('sales', this)">💳 Ventes & Suivi</button></li>
             <li><button onclick="switchTab('settings', this)">⚙️ Paramètres</button></li>
         </ul>
         <div class="sidebar-footer">
-            <button class="btn-logout" onclick="logout()">Déconnexion</button>
+            <button class="btn-logout" onclick="logout()">🔒 Déconnexion</button>
         </div>
     </aside>
 
     <!-- Contenu Principal -->
     <main>
-        <!-- Onglet 1: Liste des produits -->
+        <!-- Onglet 1 : Produits -->
         <div id="tab-products" class="tab-content active">
-            <h1 class="section-title">Mes Ressources</h1>
-            <div class="card" id="products-list-container">
-                <p style="color: var(--text-muted);">Chargement des ressources...</p>
+            <div class="header-top">
+                <h1 class="section-title">Catalogue des ressources</h1>
+                <button class="btn-primary" onclick="switchTab('add-product', document.querySelectorAll('.sidebar-menu button')[1])">➕ Ajouter</button>
+            </div>
+            <div class="card">
+                <div id="products-list-container">
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Chargement de vos ressources...</p>
+                </div>
             </div>
         </div>
 
-        <!-- Onglet 2: Ajouter un produit -->
+        <!-- Onglet 2 : Ajouter un produit -->
         <div id="tab-add-product" class="tab-content">
-            <h1 class="section-title">Ajouter une nouvelle ressource</h1>
+            <div class="header-top">
+                <h1 class="section-title">Ajouter une nouvelle ressource</h1>
+            </div>
             <div class="card">
                 <form id="add-product-form">
-                    <div class="form-group">
-                        <label>Titre *</label>
-                        <input type="text" name="title" required placeholder="Ex: Escape Game - Boucher Charcutier">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Titre de la ressource *</label>
+                            <input type="text" name="title" required placeholder="Ex: Escape Game Pédagogique - Boucher Charcutier">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Description détaillée *</label>
+                            <textarea name="description" required placeholder="Expliquez ce que contient la ressource, les objectifs pédagogiques, le public cible..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Catégorie / Métier</label>
+                            <input type="text" name="category" placeholder="Ex: Boulangerie, Anglais, Cuisine...">
+                        </div>
+                        <div class="form-group">
+                            <label>Prix de vente (€) *</label>
+                            <input type="number" step="0.01" name="price" required placeholder="9.90">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Fichier à télécharger (PDF, ZIP, Genially, etc.) *</label>
+                            <div class="file-upload-box" onclick="document.getElementById('file-input').click()">
+                                <p style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">Cliquez pour sélectionner un fichier</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Tous formats acceptés (PDF, Word, ZIP, etc.)</p>
+                                <input type="file" name="file" id="file-input" required style="display:none;" onchange="updateFileName(this)">
+                            </div>
+                            <p id="file-chosen" style="font-size: 0.85rem; color: var(--success); margin-top: 8px; font-weight: 600;"></p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Description *</label>
-                        <textarea name="description" required placeholder="Décrivez brièvement le contenu de la ressource..."></textarea>
+                    <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+                        <button type="submit" class="btn-primary">Publier la ressource 🚀</button>
                     </div>
-                    <div class="form-group">
-                        <label>Catégorie</label>
-                        <input type="text" name="category" placeholder="Ex: Boulangerie, Anglais, Cuisine...">
-                    </div>
-                    <div class="form-group">
-                        <label>Prix (€) *</label>
-                        <input type="number" step="0.01" name="price" required placeholder="9.90">
-                    </div>
-                    <div class="form-group">
-                        <label>Fichier à vendre (PDF, ZIP, etc.) *</label>
-                        <input type="file" name="file" required class="file-input-wrapper">
-                    </div>
-                    <button type="submit" class="btn-primary">Publier la ressource</button>
                 </form>
             </div>
         </div>
 
-        <!-- Onglet 3: Ventes -->
+        <!-- Onglet 3 : Ventes -->
         <div id="tab-sales" class="tab-content">
-            <h1 class="section-title">Suivi des Ventes</h1>
+            <div class="header-top">
+                <h1 class="section-title">Suivi des Ventes</h1>
+            </div>
             <div class="card">
-                <p style="color: var(--text-muted);">Aucune vente enregistrée pour le moment.</p>
+                <p style="color: var(--text-muted); text-align: center; padding: 30px;">Aucune vente enregistrée pour le moment.</p>
             </div>
         </div>
 
-        <!-- Onglet 4: Paramètres -->
+        <!-- Onglet 4 : Paramètres -->
         <div id="tab-settings" class="tab-content">
-            <h1 class="section-title">Paramètres généraux</h1>
+            <div class="header-top">
+                <h1 class="section-title">Paramètres de la boutique</h1>
+            </div>
             <div class="card">
-                <p style="color: var(--text-muted);">Options de configuration à venir.</p>
+                <p style="color: var(--text-muted);">Gestion de la sécurité et des clés API Stripe à venir.</p>
             </div>
         </div>
     </main>
 
     <script>
-        // Vérification de la session admin au chargement
+        // Affichage dynamique du nom du fichier sélectionné
+        function updateFileName(input) {
+            const label = document.getElementById('file-chosen');
+            if (input.files && input.files.length > 0) {
+                label.textContent = "📎 Fichier sélectionné : " + input.files[0].name;
+            } else {
+                label.textContent = "";
+            }
+        }
+
         async function checkSession() {
             try {
                 const res = await fetch('/admin/session');
@@ -338,7 +501,7 @@
 
                 if (!data.configured) {
                     title.textContent = "Première configuration";
-                    desc.textContent = "Créez votre mot de passe administrateur sécurisé.";
+                    desc.textContent = "Créez votre mot de passe administrateur sécurisé pour protéger votre espace.";
                     setupHelp.style.display = "block";
                 }
 
@@ -349,16 +512,15 @@
                     overlay.style.display = 'flex';
                 }
             } catch (err) {
-                console.error("Erreur de vérification session", err);
+                console.error("Erreur session", err);
             }
         }
 
-        // Gestion formulaire Login / Setup
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = document.getElementById('auth-password').value;
             const errorDiv = document.getElementById('auth-error');
-            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
 
             try {
                 const sessionRes = await fetch('/admin/session');
@@ -376,60 +538,62 @@
                     document.getElementById('auth-overlay').style.display = 'none';
                     loadProducts();
                 } else {
-                    errorDiv.textContent = data.error || "Une erreur est survenue.";
+                    errorDiv.textContent = data.error || "Mot de passe incorrect.";
+                    errorDiv.style.display = 'block';
                 }
             } catch (err) {
                 errorDiv.textContent = "Erreur de connexion au serveur.";
+                errorDiv.style.display = 'block';
             }
         });
 
-        // Navigation par onglets
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu button').forEach(el => el.classList.remove('active'));
             
             document.getElementById('tab-' + tabId).classList.add('active');
-            btn.classList.add('active');
+            if (btn) btn.classList.add('active');
 
             if (tabId === 'products') {
                 loadProducts();
             }
         }
 
-        // Charger la liste des produits
         async function loadProducts() {
             const container = document.getElementById('products-list-container');
-            container.innerHTML = '<p style="color: var(--text-muted);">Chargement...</p>';
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Chargement...</p>';
             try {
                 const res = await fetch('/admin/products');
                 if (!res.ok) throw new Error("Accès refusé");
                 const products = await res.json();
 
                 if (products.length === 0) {
-                    container.innerHTML = '<p style="color: var(--text-muted);">Aucune ressource pour le moment. Utilisez "Ajouter une ressource".</p>';
+                    container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Aucune ressource pour le moment. Cliquez sur "Ajouter" pour commencer !</p>';
                     return;
                 }
 
-                let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+                let html = '<div class="products-grid">';
                 products.forEach(p => {
                     html += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
-                            <div>
-                                <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-main);">${escapeHtml(p.title)}</h3>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(p.category || 'Général')} • <strong>${p.price} €</strong></p>
+                        <div class="product-card">
+                            <div class="product-info">
+                                <h3>${escapeHtml(p.title)}</h3>
+                                <div class="product-meta" style="margin-top: 6px;">
+                                    <span class="badge-category">${escapeHtml(p.category || 'Général')}</span>
+                                    <span class="badge-price">${p.price} €</span>
+                                </div>
                             </div>
-                            <button onclick="deleteProduct('${p.id}')" style="background: #fee2e2; color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Supprimer</button>
+                            <button class="btn-danger" onclick="deleteProduct('${p.id}')">Supprimer</button>
                         </div>
                     `;
                 });
                 html += '</div>';
                 container.innerHTML = html;
             } catch (err) {
-                container.innerHTML = '<p style="color: var(--danger);">Impossible de charger les produits.</p>';
+                container.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 20px;">Impossible de charger les produits.</p>';
             }
         }
 
-        // Ajouter un produit
         document.getElementById('add-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -441,9 +605,10 @@
                 });
 
                 if (res.ok) {
-                    alert("Ressource publiée avec succès !");
+                    alert("Ressource publiée avec succès ! 🎉");
                     e.target.reset();
-                    switchTab('products', document.querySelector('.sidebar-menu button'));
+                    document.getElementById('file-chosen').textContent = '';
+                    switchTab('products', document.querySelectorAll('.sidebar-menu button')[0]);
                 } else {
                     const data = await res.json();
                     alert("Erreur: " + (data.error || "Impossible d'ajouter la ressource"));
@@ -453,7 +618,6 @@
             }
         });
 
-        // Supprimer un produit
         async function deleteProduct(id) {
             if (!confirm("Voulez-vous vraiment supprimer cette ressource ?")) return;
             try {
@@ -468,7 +632,6 @@
             }
         }
 
-        // Déconnexion
         async function logout() {
             await fetch('/admin/logout', { method: 'POST' });
             location.reload();
@@ -479,7 +642,6 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        // Lancement au démarrage
         checkSession();
     </script>
 </body>
