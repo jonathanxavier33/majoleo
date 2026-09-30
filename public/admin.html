@@ -256,10 +256,27 @@
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             transition: border-color 0.2s;
+            gap: 20px;
         }
 
         .product-card:hover {
             border-color: var(--primary);
+        }
+
+        .product-thumbnail {
+            width: 70px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        .product-info-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-grow: 1;
         }
 
         .product-info h3 {
@@ -422,7 +439,7 @@
                 <h1 class="section-title">Ajouter une nouvelle ressource</h1>
             </div>
             <div class="card">
-                <form id="add-product-form">
+                <form id="add-product-form" enctype="multipart/form-data">
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>Titre de la ressource *</label>
@@ -440,10 +457,22 @@
                             <label>Prix de vente (€) *</label>
                             <input type="number" step="0.01" name="price" required placeholder="9.90">
                         </div>
+                        
+                        <!-- AJOUT : Champ Image de couverture -->
+                        <div class="form-group full-width">
+                            <label>Image de couverture (Visuel / Miniature) *</label>
+                            <div class="file-upload-box" onclick="document.getElementById('image-input').click()">
+                                <p style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">🖼️ Cliquez pour sélectionner une image</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Formats acceptés : JPG, PNG, WebP</p>
+                                <input type="file" name="image" id="image-input" accept="image/*" required style="display:none;" onchange="updateImageName(this)">
+                            </div>
+                            <p id="image-chosen" style="font-size: 0.85rem; color: var(--success); margin-top: 8px; font-weight: 600;"></p>
+                        </div>
+
                         <div class="form-group full-width">
                             <label>Fichier à télécharger (PDF, ZIP, Genially, etc.) *</label>
                             <div class="file-upload-box" onclick="document.getElementById('file-input').click()">
-                                <p style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">Cliquez pour sélectionner un fichier</p>
+                                <p style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">📎 Cliquez pour sélectionner le fichier ressource</p>
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">Tous formats acceptés (PDF, Word, ZIP, etc.)</p>
                                 <input type="file" name="file" id="file-input" required style="display:none;" onchange="updateFileName(this)">
                             </div>
@@ -479,11 +508,21 @@
     </main>
 
     <script>
-        // Affichage dynamique du nom du fichier sélectionné
+        // Affichage dynamique du nom du fichier ressource sélectionné
         function updateFileName(input) {
             const label = document.getElementById('file-chosen');
             if (input.files && input.files.length > 0) {
                 label.textContent = "📎 Fichier sélectionné : " + input.files[0].name;
+            } else {
+                label.textContent = "";
+            }
+        }
+
+        // Affichage dynamique du nom de l'image sélectionnée
+        function updateImageName(input) {
+            const label = document.getElementById('image-chosen');
+            if (input.files && input.files.length > 0) {
+                label.textContent = "🖼️ Image sélectionnée : " + input.files[0].name;
             } else {
                 label.textContent = "";
             }
@@ -574,13 +613,17 @@
 
                 let html = '<div class="products-grid">';
                 products.forEach(p => {
+                    const imgSrc = p.imageUrl ? p.imageUrl : 'https://via.placeholder.com/70x50?text=Majoleo';
                     html += `
                         <div class="product-card">
-                            <div class="product-info">
-                                <h3>${escapeHtml(p.title)}</h3>
-                                <div class="product-meta" style="margin-top: 6px;">
-                                    <span class="badge-category">${escapeHtml(p.category || 'Général')}</span>
-                                    <span class="badge-price">${p.price} €</span>
+                            <div class="product-info-wrapper">
+                                <img src="${imgSrc}" alt="Miniature" class="product-thumbnail">
+                                <div class="product-info">
+                                    <h3>${escapeHtml(p.title)}</h3>
+                                    <div class="product-meta" style="margin-top: 6px;">
+                                        <span class="badge-category">${escapeHtml(p.category || 'Général')}</span>
+                                        <span class="badge-price">${p.price} €</span>
+                                    </div>
                                 </div>
                             </div>
                             <button class="btn-danger" onclick="deleteProduct('${p.id}')">Supprimer</button>
@@ -608,6 +651,7 @@
                     alert("Ressource publiée avec succès ! 🎉");
                     e.target.reset();
                     document.getElementById('file-chosen').textContent = '';
+                    document.getElementById('image-chosen').textContent = '';
                     switchTab('products', document.querySelectorAll('.sidebar-menu button')[0]);
                 } else {
                     const data = await res.json();
