@@ -1,157 +1,486 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Espace vendeur — La Salle des Ressources</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>" />
-<link rel="stylesheet" href="/style.css" />
-<style>
-  .admin-shell { display: none; }
-  .admin-shell.ready { display: block; }
-  .admin-grid { display: grid; grid-template-columns: 380px 1fr; gap: 30px; align-items: start; }
-  .stat-row { display: flex; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
-  .stat-box { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; min-width: 150px; box-shadow: var(--shadow-sm); }
-  .stat-box b { display: block; font-family: "Fraunces", serif; font-size: 1.6rem; color: var(--primary-dark); }
-  .stat-box span { color: var(--ink-soft); font-size: 0.82rem; }
-  .admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--paper); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }
-  .admin-table th, .admin-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  .admin-table th { color: var(--ink-soft); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; background: var(--paper-dim); }
-  .row-actions { display: flex; gap: 8px; }
-  .row-actions button { background: transparent; border: 1.5px solid var(--line); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
-  .row-actions button:hover { border-color: var(--primary); color: var(--primary-dark); }
-  .badge { padding: 3px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
-  .badge.on { background: var(--sage-tint); color: #3F5A3D; }
-  .badge.off { background: var(--primary-tint); color: #A02F54; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tabs button { background: var(--paper); border: 1.5px solid var(--line); color: var(--ink-soft); padding: 9px 18px; border-radius: 999px; cursor: pointer; font-weight: 600; }
-  .tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .tab-pane { display: none; }
-  .tab-pane.active { display: block; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Majoléo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .sidebar-menu button {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-menu button:hover, .sidebar-menu button.active {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-logout {
+            width: 100%;
+            background: #f1f5f9;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            color: var(--danger);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #fee2e2;
+        }
+
+        /* Main Content */
+        main {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 40px;
+            max-width: 1000px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text-main);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .file-input-wrapper {
+            margin-top: 6px;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Modal / Overlay Auth */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-card h2 {
+            margin-bottom: 8px;
+            font-size: 1.25rem;
+        }
+
+        .auth-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+    </style>
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap">
-    <a href="/" class="brand"><span class="brand-mark" id="brand-mark">SR</span> <span id="brand-name">Votre boutique</span></a>
-    <nav class="main-nav">
-      <a href="/">Voir la boutique</a>
-      <button class="btn btn-ghost" id="logout-btn" style="display:none;padding:8px 16px;">Se déconnecter</button>
-    </nav>
-  </div>
-</header>
-
-<section class="section" id="setup-shell" style="display:none;">
-  <div class="wrap">
-    <div class="panel" style="max-width:460px;">
-      <h2>Bienvenue 👋</h2>
-      <p class="sub">Aucun mot de passe créateur n'est encore défini sur ce site. Choisissez-en un maintenant — c'est vous qui déciderez de tout, personne d'autre ne peut le faire à votre place, même pas dans le code source.</p>
-      <div class="field">
-        <label for="setup-password">Créez votre mot de passe créateur</label>
-        <input id="setup-password" type="password" autocomplete="new-password" placeholder="8 caractères minimum" />
-      </div>
-      <div class="field">
-        <label for="setup-password-confirm">Confirmez-le</label>
-        <input id="setup-password-confirm" type="password" autocomplete="new-password" />
-      </div>
-      <button class="btn btn-primary btn-block" id="setup-btn">Créer mon compte créateur</button>
-      <p class="error-line" id="setup-error" style="display:none;"></p>
-      <p class="form-note" style="margin-top:14px;">Ce mot de passe est enregistré uniquement sur votre serveur (fichier <code>data/config.json</code>), jamais dans le code que vous publiez sur GitHub.</p>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="login-shell">
-  <div class="wrap">
-    <div class="panel" style="max-width:420px;">
-      <h2>Espace créateur</h2>
-      <p class="sub">Connectez-vous pour gérer votre catalogue et suivre vos ventes.</p>
-      <div class="field">
-        <label for="admin-password">Mot de passe créateur</label>
-        <input id="admin-password" type="password" autocomplete="current-password" />
-      </div>
-      <button class="btn btn-dark btn-block" id="login-btn">Se connecter</button>
-      <p class="error-line" id="login-error" style="display:none;"></p>
-    </div>
-  </div>
-</section>
-
-<section class="section admin-shell" id="admin-shell">
-  <div class="wrap">
-    <div class="stat-row" id="stat-row"></div>
-
-    <div class="tabs">
-      <button class="active" data-tab="products">Produits</button>
-      <button data-tab="new">Ajouter une ressource</button>
-      <button data-tab="sales">Ventes</button>
-      <button data-tab="settings">Paramètres</button>
-    </div>
-
-    <div class="tab-pane active" id="tab-products">
-      <table class="admin-table">
-        <thead><tr><th>Titre</th><th>Catégorie</th><th>Prix</th><th>Statut</th><th></th></tr></thead>
-        <tbody id="products-body"><tr><td colspan="5">Chargement…</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="tab-pane" id="tab-new">
-      <div class="panel" style="max-width:640px;margin:0;">
-        <h2 style="font-size:1.3rem;">Nouvelle ressource</h2>
-        <p class="sub">Tout type de fichier est accepté : PDF, Word, HTML, Excel, image, ZIP… Les champs marqués * sont obligatoires.</p>
-        <form id="product-form">
-          <div class="field"><label>Titre *</label><input name="title" required /></div>
-          <div class="field"><label>Description *</label><textarea name="description" required></textarea></div>
-          <div class="field"><label>Catégorie</label><input name="category" placeholder="ex. Mathématiques, Histoire, Modèles administratifs" /></div>
-          <div class="field"><label>Formats affichés (séparés par une virgule)</label><input name="formats" placeholder="pdf, html, docx, xlsx, zip…" /></div>
-          <div class="field"><label>Prix (€) *</label><input name="price" type="number" min="0" step="0.01" required /></div>
-          <div class="field"><label>Fichier à vendre — tous types acceptés *</label><input name="file" type="file" required /></div>
-          <div class="field"><label>Image de couverture (optionnel)</label><input name="cover" type="file" accept="image/*" /></div>
-          <button class="btn btn-primary btn-block" type="submit">Publier la ressource</button>
-          <p class="error-line" id="product-error" style="display:none;"></p>
-        </form>
-      </div>
-    </div>
-
-    <div class="tab-pane" id="tab-sales">
-      <table class="admin-table">
-        <thead><tr><th>Code</th><th>Produit</th><th>Montant</th><th>Email</th><th>Date</th><th>Téléch.</th></tr></thead>
-        <tbody id="sales-body"><tr><td colspan="6">Chargement…</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="tab-pane" id="tab-settings">
-      <div class="admin-grid">
-        <div class="panel" style="max-width:none;margin:0;">
-          <h2 style="font-size:1.3rem;">Identité de la boutique</h2>
-          <p class="sub">Changez le nom, le slogan et l'e-mail de contact sans toucher au code — c'est ce qui s'affiche sur la page d'accueil.</p>
-          <form id="site-form">
-            <div class="field"><label>Nom de la boutique</label><input name="name" id="site-name-input" /></div>
-            <div class="field"><label>Slogan</label><input name="tagline" id="site-tagline-input" /></div>
-            <div class="field"><label>E-mail de contact affiché</label><input name="contactEmail" id="site-email-input" type="email" /></div>
-            <button class="btn btn-primary btn-block" type="submit">Enregistrer</button>
-            <p class="error-line" id="site-error" style="display:none;"></p>
-            <p class="form-note" id="site-success" style="display:none;color:#2c6b45;">Enregistré ✓</p>
-          </form>
+    <!-- Modal d'authentification / Setup -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2 id="auth-title">Connexion Administration</h2>
+            <p id="auth-desc">Veuillez entrer votre mot de passe administrateur.</p>
+            <div id="auth-error" class="error-msg"></div>
+            <form id="auth-form">
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••">
+                    <div id="setup-help" class="help-text" style="display:none;">Minimum 8 caractères (première configuration).</div>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;">Valider</button>
+            </form>
         </div>
-        <div class="panel" style="max-width:none;margin:0;">
-          <h2 style="font-size:1.3rem;">Mot de passe créateur</h2>
-          <p class="sub">Changez-le à tout moment. Les autres connexions ouvertes seront déconnectées.</p>
-          <form id="password-form">
-            <div class="field"><label>Mot de passe actuel</label><input name="currentPassword" type="password" required autocomplete="current-password" /></div>
-            <div class="field"><label>Nouveau mot de passe (8 caractères min.)</label><input name="newPassword" type="password" required minlength="8" autocomplete="new-password" /></div>
-            <button class="btn btn-dark btn-block" type="submit">Changer le mot de passe</button>
-            <p class="error-line" id="password-error" style="display:none;"></p>
-            <p class="form-note" id="password-success" style="display:none;color:#2c6b45;">Mot de passe mis à jour ✓</p>
-          </form>
-        </div>
-      </div>
     </div>
-  </div>
-</section>
 
-<div class="toast" id="toast"></div>
+    <!-- Sidebar de navigation -->
+    <aside>
+        <div class="sidebar-brand">Majoléo Admin</div>
+        <ul class="sidebar-menu">
+            <li><button class="active" onclick="switchTab('products', this)">📦 Gérer les ressources</button></li>
+            <li><button onclick="switchTab('add-product', this)">➕ Ajouter une ressource</button></li>
+            <li><button onclick="switchTab('sales', this)">💳 Ventes & Achats</button></li>
+            <li><button onclick="switchTab('settings', this)">⚙️ Paramètres</button></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">Déconnexion</button>
+        </div>
+    </aside>
 
-<script src="/admin.js"></script>
+    <!-- Contenu Principal -->
+    <main>
+        <!-- Onglet 1: Liste des produits -->
+        <div id="tab-products" class="tab-content active">
+            <h1 class="section-title">Mes Ressources</h1>
+            <div class="card" id="products-list-container">
+                <p style="color: var(--text-muted);">Chargement des ressources...</p>
+            </div>
+        </div>
+
+        <!-- Onglet 2: Ajouter un produit -->
+        <div id="tab-add-product" class="tab-content">
+            <h1 class="section-title">Ajouter une nouvelle ressource</h1>
+            <div class="card">
+                <form id="add-product-form">
+                    <div class="form-group">
+                        <label>Titre *</label>
+                        <input type="text" name="title" required placeholder="Ex: Escape Game - Boucher Charcutier">
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea name="description" required placeholder="Décrivez brièvement le contenu de la ressource..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Catégorie</label>
+                        <input type="text" name="category" placeholder="Ex: Boulangerie, Anglais, Cuisine...">
+                    </div>
+                    <div class="form-group">
+                        <label>Prix (€) *</label>
+                        <input type="number" step="0.01" name="price" required placeholder="9.90">
+                    </div>
+                    <div class="form-group">
+                        <label>Fichier à vendre (PDF, ZIP, etc.) *</label>
+                        <input type="file" name="file" required class="file-input-wrapper">
+                    </div>
+                    <button type="submit" class="btn-primary">Publier la ressource</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Onglet 3: Ventes -->
+        <div id="tab-sales" class="tab-content">
+            <h1 class="section-title">Suivi des Ventes</h1>
+            <div class="card">
+                <p style="color: var(--text-muted);">Aucune vente enregistrée pour le moment.</p>
+            </div>
+        </div>
+
+        <!-- Onglet 4: Paramètres -->
+        <div id="tab-settings" class="tab-content">
+            <h1 class="section-title">Paramètres généraux</h1>
+            <div class="card">
+                <p style="color: var(--text-muted);">Options de configuration à venir.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Vérification de la session admin au chargement
+        async function checkSession() {
+            try {
+                const res = await fetch('/admin/session');
+                const data = await res.json();
+                
+                const overlay = document.getElementById('auth-overlay');
+                const title = document.getElementById('auth-title');
+                const desc = document.getElementById('auth-desc');
+                const setupHelp = document.getElementById('setup-help');
+
+                if (!data.configured) {
+                    title.textContent = "Première configuration";
+                    desc.textContent = "Créez votre mot de passe administrateur sécurisé.";
+                    setupHelp.style.display = "block";
+                }
+
+                if (data.authenticated) {
+                    overlay.style.display = 'none';
+                    loadProducts();
+                } else {
+                    overlay.style.display = 'flex';
+                }
+            } catch (err) {
+                console.error("Erreur de vérification session", err);
+            }
+        }
+
+        // Gestion formulaire Login / Setup
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('auth-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            errorDiv.textContent = '';
+
+            try {
+                const sessionRes = await fetch('/admin/session');
+                const sessionData = await sessionRes.json();
+                const endpoint = sessionData.configured ? '/admin/login' : '/admin/setup';
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    loadProducts();
+                } else {
+                    errorDiv.textContent = data.error || "Une erreur est survenue.";
+                }
+            } catch (err) {
+                errorDiv.textContent = "Erreur de connexion au serveur.";
+            }
+        });
+
+        // Navigation par onglets
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+
+            if (tabId === 'products') {
+                loadProducts();
+            }
+        }
+
+        // Charger la liste des produits
+        async function loadProducts() {
+            const container = document.getElementById('products-list-container');
+            container.innerHTML = '<p style="color: var(--text-muted);">Chargement...</p>';
+            try {
+                const res = await fetch('/admin/products');
+                if (!res.ok) throw new Error("Accès refusé");
+                const products = await res.json();
+
+                if (products.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">Aucune ressource pour le moment. Utilisez "Ajouter une ressource".</p>';
+                    return;
+                }
+
+                let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+                products.forEach(p => {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-main);">${escapeHtml(p.title)}</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(p.category || 'Général')} • <strong>${p.price} €</strong></p>
+                            </div>
+                            <button onclick="deleteProduct('${p.id}')" style="background: #fee2e2; color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Supprimer</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p style="color: var(--danger);">Impossible de charger les produits.</p>';
+            }
+        }
+
+        // Ajouter un produit
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const res = await fetch('/admin/products', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    alert("Ressource publiée avec succès !");
+                    e.target.reset();
+                    switchTab('products', document.querySelector('.sidebar-menu button'));
+                } else {
+                    const data = await res.json();
+                    alert("Erreur: " + (data.error || "Impossible d'ajouter la ressource"));
+                }
+            } catch (err) {
+                alert("Erreur réseau lors de l'ajout.");
+            }
+        });
+
+        // Supprimer un produit
+        async function deleteProduct(id) {
+            if (!confirm("Voulez-vous vraiment supprimer cette ressource ?")) return;
+            try {
+                const res = await fetch('/admin/products/' + id, { method: 'DELETE' });
+                if (res.ok) {
+                    loadProducts();
+                } else {
+                    alert("Erreur lors de la suppression.");
+                }
+            } catch (err) {
+                alert("Erreur réseau.");
+            }
+        }
+
+        // Déconnexion
+        async function logout() {
+            await fetch('/admin/logout', { method: 'POST' });
+            location.reload();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Lancement au démarrage
+        checkSession();
+    </script>
 </body>
 </html>
