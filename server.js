@@ -29,13 +29,14 @@ const db = new sqlite3.Database(dbFile, (err) => {
 
 // Création des tables si elles n'existent pas
 db.serialize(() => {
-    // Table des produits
+    // Table des produits (avec ajout de imageUrl)
     db.run(`CREATE TABLE IF NOT EXISTS products (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT,
         price REAL NOT NULL,
         fileUrl TEXT,
+        imageUrl TEXT,
         category TEXT,
         active INTEGER DEFAULT 1,
         createdAt TEXT
@@ -216,21 +217,27 @@ app.get('/admin/products', requireAdmin, (req, res) => {
 
 app.post('/admin/products', requireAdmin, upload.any(), (req, res) => {
     const { title, description, price, category } = req.body;
+    
     let filePath = '';
+    let imagePath = '';
+
     if (req.files && req.files.length > 0) {
-        const mainFile = req.files.find(f => f.fieldname === 'file') || req.files[0];
-        filePath = `/uploads/${mainFile.filename}`;
+        const mainFile = req.files.find(f => f.fieldname === 'file');
+        const imageFile = req.files.find(f => f.fieldname === 'image');
+
+        if (mainFile) filePath = `/uploads/${mainFile.filename}`;
+        if (imageFile) imagePath = `/uploads/${imageFile.filename}`;
     }
 
     const id = Date.now().toString();
     const createdAt = new Date().toISOString();
     const numericPrice = parseFloat(price) || 0;
 
-    const query = `INSERT INTO products (id, title, description, price, fileUrl, category, active, createdAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`;
+    const query = `INSERT INTO products (id, title, description, price, fileUrl, imageUrl, category, active, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`;
     
-    db.run(query, [id, title || "Sans titre", description || "", numericPrice, filePath, category || "Général", createdAt], function(err) {
+    db.run(query, [id, title || "Sans titre", description || "", numericPrice, filePath, imagePath, category || "Général", createdAt], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ id, title, description, price: numericPrice, fileUrl: filePath, category, active: 1 });
+        res.status(201).json({ id, title, description, price: numericPrice, fileUrl: filePath, imageUrl: imagePath, category, active: 1 });
     });
 });
 
@@ -242,13 +249,26 @@ app.put('/admin/products/:id', requireAdmin, upload.any(), (req, res) => {
         if (err || !product) return res.status(404).json({ error: "Produit introuvable." });
 
         let filePath = product.fileUrl;
+        let imagePath = product.imageUrl;
+
         if (req.files && req.files.length > 0) {
-            const mainFile = req.files.find(f => f.fieldname === 'file') || req.files[0];
-            filePath = `/uploads/${mainFile.filename}`;
-            // Supprimer l'ancien fichier s'il existe
-            if (product.fileUrl) {
-                const oldPath = path.join(__dirname, 'public', product.fileUrl);
-                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            const mainFile = req.files.find(f => f.fieldname === 'file');
+            const imageFile = req.files.find(f => f.fieldname === 'image');
+
+            if (mainFile) {
+                filePath = `/uploads/${mainFile.filename}`;
+                if (product.fileUrl) {
+                    const oldPath = path.join(__dirname, 'public', product.fileUrl);
+                    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+                }
+            }
+
+            if (imageFile) {
+                imagePath = `/uploads/${imageFile.filename}`;
+                if (product.imageUrl) {
+                    const oldImgPath = path.join(__dirname, 'public', product.imageUrl);
+                    if (fs.existsSync(oldImgPath)) fs.unlinkSync(oldImgPath);
+                }
             }
         }
 
@@ -258,8 +278,8 @@ app.put('/admin/products/:id', requireAdmin, upload.any(), (req, res) => {
         const newActive = active !== undefined ? (active ? 1 : 0) : product.active;
         const newCat = category !== undefined ? category : product.category;
 
-        const query = `UPDATE products SET title = ?, description = ?, price = ?, fileUrl = ?, category = ?, active = ? WHERE id = ?`;
-        db.run(query, [newTitle, newDesc, newPrice, filePath, newCat, newActive, productId], (err) => {
+        const query = `UPDATE products SET title = ?, description = ?, price = ?, fileUrl = ?, imageUrl = ?, category = ?, active = ? WHERE id = ?`;
+        db.run(query, [newTitle, newDesc, newPrice, filePath, imagePath, newCat, newActive, productId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, message: "Produit mis à jour." });
         });
@@ -268,10 +288,16 @@ app.put('/admin/products/:id', requireAdmin, upload.any(), (req, res) => {
 
 app.delete('/admin/products/:id', requireAdmin, (req, res) => {
     const productId = req.params.id;
-    db.get("SELECT fileUrl FROM products WHERE id = ?", [productId], (err, product) => {
-        if (product && product.fileUrl) {
-            const filePath = path.join(__dirname, 'public', product.fileUrl);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    db.get("SELECT fileUrl, imageUrl FROM products WHERE id = ?", [productId], (err, product) => {
+        if (product) {
+            if (product.fileUrl) {
+                const filePath = path.join(__dirname, 'public', product.fileUrl);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+            if (product.imageUrl) {
+                const imagePath = path.join(__dirname, 'public', product.imageUrl);
+                if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+            }
         }
         db.run("DELETE FROM products WHERE id = ?", [productId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -279,10 +305,12 @@ app.delete('/admin/products/:id', requireAdmin, (req, res) => {
         });
     });
 });
+
 // Route pour afficher la page d'administration
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
+
 // ==========================================
 // 6. LANCEMENT DU SERVEUR
 // ==========================================
