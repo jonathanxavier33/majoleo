@@ -1,19 +1,16 @@
 {
-  "name": "edu-store",
+  "name": "majoleo",
   "version": "1.0.0",
-  "description": "Boutique de ressources pédagogiques numériques (PDF, HTML, Word) avec paiement Stripe et codes d'accès.",
+  "description": "Boutique Majoléo",
   "main": "server.js",
-  "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "cookie-parser": "^1.4.6",
-    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "multer": "^2.0.0",
-    "nanoid": "^3.3.7",
-    "stripe": "^16.12.0"
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1",
+    "sqlite3": "^5.1.7",
+    "stripe": "^15.0.0"
   }
 }
